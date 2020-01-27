@@ -8,6 +8,10 @@ let VueSocketIO = require('vue-socket.io')
 
 // Vue.config.productionTip = false;
 
+interface WSMessage {
+  data: String
+}
+
 Vue.use(new VueSocketIO({
     debug: true,
     connection: 'ws://localhost:3001/dynamic-101',
@@ -25,15 +29,21 @@ new Vue({
     connect: function () {
       console.log('socket connected');
       //@ts-ignore
-      this.$socket.emit("state_changed", { state: this.$route.name });
+      this.$socket.emit("state_changed", { data: this.$route.name });
     },
-    hello: function (data: {message: String}) {
-      console.log("Hello from server", data)
+    hello: function (message: WSMessage) {
+      console.log("Hello from server", message)
+    },
+    state_changed: function(message: WSMessage) {
+      //@ts-ignore
+      if(this.$route.name !== message.data)
+        router.push({ path: message.data })
     }
   },
   watch: {
     $route (to, from){
-      this.$socket.emit("state_changed", { state: to.name });
+      //@ts-ignore
+      this.$socket.emit("state_changed", { data: to.name });
     }
   },
   router,
