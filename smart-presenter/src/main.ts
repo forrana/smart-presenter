@@ -5,7 +5,6 @@ import store from "./store";
 import io from 'socket.io-client';
 let VueSocketIO = require('vue-socket.io')
 
-
 // Vue.config.productionTip = false;
 
 interface WSMessage {
@@ -14,7 +13,7 @@ interface WSMessage {
 
 Vue.use(new VueSocketIO({
     debug: true,
-    connection: 'ws://localhost:3001/dynamic-101',
+    connection: 'ws://192.168.10.33:3001/dynamic-101',
     vuex: {
         store,
         actionPrefix: 'SOCKET_',
@@ -31,19 +30,17 @@ new Vue({
       //@ts-ignore
       this.$socket.emit("state_changed", { data: this.$route.name });
     },
-    hello: function (message: WSMessage) {
-      console.log("Hello from server", message)
-    },
     state_changed: function(message: WSMessage) {
       //@ts-ignore
-      if(this.$route.name !== message.data)
+      if(this.$route.fullPath !== message.data)
+      //@ts-ignore
         router.push({ path: message.data })
     }
   },
   watch: {
-    $route (to, from){
+    $route(to, from) {
       //@ts-ignore
-      this.$socket.emit("state_changed", { data: to.name });
+      this.$socket.emit("state_changed", { data: to.fullPath });
     }
   },
   router,
