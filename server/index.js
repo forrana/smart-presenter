@@ -15,17 +15,33 @@ io.set('origins', 'http://localhost:8080, http://192.168.10.33:8080');
 
 console.log("listening on port 3001")
 
-const isClientAdminForChannel = (clientId, channelId) =>
-  adminMap.get(channelId) === clientId
+const isClientAdminForChannel = (socket, namespace) => {
+  return namespace.adminSessionId == socket.client.id
+}
 
-const dynamicNsp = io.of(/^\/dynamic-\d+$/)
+const dynamicNsp = io.of(/^\/dynamic-[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i)
 dynamicNsp.on('connect', (socket) => {
+  console.log("connected", socket.client.id);
   const newNamespace = socket.nsp;
-  if(!adminMap.has(newNamespace.name)) {
-    adminMap.set(newNamespace.name, socket.client.id);
-  }
+  newNamespace.adminSessionId = !newNamespace.adminSessionId ?
+    socket.client.id : newNamespace.adminSessionId;
+
+  socket.on('register_user', message => {
+    console.log("registering a new user", message.userId, socket.client.id);
+    console.log(newNamespace.adminSessionId, newNamespace.adminClientId)
+    if(newNamespace.adminSessionId == socket.client.id) {
+      console.log("user is registered")
+      newNamespace.adminClientId = message.userId
+    } else if(newNamespace.adminClientId == message.userId) {
+      console.log("session is updated")
+      newNamespace.adminSessionId = socket.client.id
+    } else return;
+    socket.emit("user_registered", { data: message.userId })
+  });
+
   socket.on('state_changed', (message) => {
-    isClientAdminForChannel(socket.client.id, newNamespace.name) &&
+    console.log("state change attempt", message);
+    isClientAdminForChannel(socket, newNamespace) &&
       newNamespace.emit("state_changed", { data: message.data });
   });
 });

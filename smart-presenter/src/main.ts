@@ -3,22 +3,29 @@ import App from "./App.vue";
 import router from "./router";
 import store from "./store";
 import io from 'socket.io-client';
+const init = require("./init");
 const VueSocketIO = require('vue-socket.io');
+const QRCode = require('qrcode')
 
+const canvas = document.getElementById('canvas')
 
 interface WSMessage {
   data: String
 }
 
-const sessionId = Math.ceil(Math.random()*1000000000000000)
-const queryString = window.location.search;
-const urlParams = queryString && new URLSearchParams(queryString) || new Map();
-const connectToSessionId = urlParams.get('sessionId');
-const resultSessionId = connectToSessionId ? connectToSessionId : sessionId;
+function renderQrCode (sessionId: String) {
+  const qrcodeUrl = `${location.href}?sessionId=${sessionId}`
+  console.info("qrcodeUrl: ", qrcodeUrl);
+  QRCode.toCanvas(canvas, qrcodeUrl, function (error: String) {
+    if (error) console.error(error)
+  })
+}
 
+let {sessionId, userId} = init.default();
+console.log(sessionId, userId);
 Vue.use(new VueSocketIO({
     debug: true,
-    connection: `ws://192.168.10.33:3001/dynamic-${resultSessionId}`,
+    connection: `ws://localhost:3001/dynamic-${sessionId}`,
     vuex: {
         store,
         actionPrefix: 'SOCKET_',
@@ -26,26 +33,34 @@ Vue.use(new VueSocketIO({
     },
 }))
 
-
 new Vue({
+  data: {
+    isAdmin: false
+  },
   //@ts-ignore
   sockets: {
     connect: function () {
       console.log('socket connected');
       //@ts-ignore
-      this.$socket.emit("state_changed", { data: this.$route.fullPath });
+      this.$socket.emit("register_user", { userId });
     },
     state_changed: function(message: WSMessage) {
-      //@ts-ignore
-      if(this.$route.fullPath !== message.data)
+      if(!this.isAdmin)
       //@ts-ignore
         router.push({ path: message.data })
+    },
+    user_registered: function(message: WSMessage) {
+      if(message.data == userId) {
+        this.isAdmin = true;
+        renderQrCode(sessionId);
+      }
     }
   },
   watch: {
     $route(to, from) {
-      //@ts-ignore
-      this.$socket.emit("state_changed", { data: to.fullPath });
+      if(this.isAdmin)
+        //@ts-ignore
+        this.$socket.emit("state_changed", { data: to.fullPath });
     }
   },
   router,
