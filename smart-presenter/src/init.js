@@ -4,15 +4,18 @@ function uuidv4() {
   );
 }
 
-function getSessionIdFromUrl() {
+function getKeyIdFromUrl(key) {
   const queryString = window.location.search;
   const urlParams = queryString && new URLSearchParams(queryString) || new Map();
-  return urlParams.get('sessionId');
+  return urlParams.get(key);
 }
+
+const getSessionIdFromUrl = () => getKeyIdFromUrl("sessionId");
+const getUserIdFromUrl = () => getKeyIdFromUrl("userId");
 
 export default function init() {
   const mayBeSessionId = sessionStorage.getItem("sessionId") || getSessionIdFromUrl();
-  const mayBeuserId = sessionStorage.getItem("userId");
+  const mayBeuserId = sessionStorage.getItem("userId") || getUserIdFromUrl();
 
   const sessionId = mayBeSessionId || uuidv4();
   const userId = mayBeuserId || uuidv4();

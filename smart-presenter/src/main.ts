@@ -22,7 +22,23 @@ function renderQrCode (sessionId: String) {
 }
 
 let {sessionId, userId} = init.default();
-console.log(sessionId, userId);
+
+let getNextRoute = (routes, currentRouteName) => {
+  const totalRoutes = routes.length
+  const currentRouteIndex = routes.findIndex(({name}) => name == currentRouteName)
+  const nextRouteIndex = currentRouteIndex == routes.length - 1 ?
+    currentRouteIndex : currentRouteIndex + 1
+  return routes[nextRouteIndex]
+}
+
+let getPreviousRoute = (routes, currentRouteName) => {
+  const totalRoutes = routes.length
+  const currentRouteIndex = routes.findIndex(({name}) => name == currentRouteName)
+  const prevRouteIndex = currentRouteIndex == 0 ?
+    currentRouteIndex : currentRouteIndex - 1
+  return routes[prevRouteIndex]
+}
+
 Vue.use(new VueSocketIO({
     debug: true,
     connection: `ws://localhost:3001/dynamic-${sessionId}`,
@@ -35,7 +51,44 @@ Vue.use(new VueSocketIO({
 
 new Vue({
   data: {
-    isAdmin: false
+    isAdmin: false,
+  },
+  props: {
+    event: {
+      type: String,
+      default: "keyup"
+    },
+  },
+  mounted() {
+    window.addEventListener(this.event, this.emitEvent);
+  },
+  destroyed() {
+    window.removeEventListener(this.event, this.emitEvent);
+  },
+  methods: {
+    emitEvent: function (e: KeyboardEvent) {
+      switch (e.code) {
+        case "ArrowRight":
+        case "Space":
+        case "Enter":
+          this.nextSlide();
+          break;
+
+        case "ArrowLeft":
+          this.prevSlide();
+          break;
+      }
+    },
+    nextSlide: function () {
+      const nextRoute = getNextRoute(this.$router.options.routes, this.$route.name)
+      if(nextRoute.name !== this.$route.name)
+        router.push({ path: nextRoute.path })
+    },
+    prevSlide: function () {
+      const prevRoute = getPreviousRoute(this.$router.options.routes, this.$route.name)
+      if(prevRoute.name !== this.$route.name)
+        router.push({ path: prevRoute.path })
+    }
   },
   //@ts-ignore
   sockets: {
