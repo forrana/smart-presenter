@@ -1,8 +1,9 @@
 <template>
   <div id="app">
+    <canvas id="canvas"></canvas>
     <div id="nav">
       <router-link to="/">Title</router-link> |
-      <router-link to="/intro">Introduction</router-link>  |
+      <router-link to="/intro">Introduction</router-link> |
       <router-link to="/motivation">Motivation</router-link>
     </div>
     <router-view />
@@ -17,4 +18,7 @@
   text-align center
   color #2c3e50
   margin-top 60px
+#canvas
+  height 7em
+  width 7em
 </style>

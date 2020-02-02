@@ -27,16 +27,20 @@ dynamicNsp.on('connect', (socket) => {
     socket.client.id : newNamespace.adminSessionId;
 
   socket.on('register_user', message => {
-    console.log("registering a new user", message.userId, socket.client.id);
-    console.log(newNamespace.adminSessionId, newNamespace.adminClientId)
     if(newNamespace.adminSessionId == socket.client.id) {
-      console.log("user is registered")
-      newNamespace.adminClientId = message.userId
+      console.log("user is registered");
+      newNamespace.adminClientId = message.userId;
     } else if(newNamespace.adminClientId == message.userId) {
-      console.log("session is updated")
-      newNamespace.adminSessionId = socket.client.id
+      console.log("session is updated");
+      const openSockets = newNamespace.clients().sockets;
+      const fullSessionIdName = `${newNamespace.name}#${newNamespace.adminSessionId}`;
+      if(openSockets[fullSessionIdName]) {
+        openSockets[fullSessionIdName].emit("user_deregistered", { data: true });
+      }
+      // io.to(`${newNamespace.adminSessionId}`).emit("user_registered", { data: "" });
+      newNamespace.adminSessionId = socket.client.id;
     } else return;
-    socket.emit("user_registered", { data: message.userId })
+    socket.emit("user_registered", { data: message.userId });
   });
 
   socket.on('state_changed', (message) => {

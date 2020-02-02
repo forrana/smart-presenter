@@ -7,14 +7,18 @@ const init = require("./init");
 const VueSocketIO = require('vue-socket.io');
 const QRCode = require('qrcode')
 
-const canvas = document.getElementById('canvas')
 
 interface WSMessage {
   data: String
 }
 
-function renderQrCode (sessionId: String) {
-  const qrcodeUrl = `${location.href}?sessionId=${sessionId}`
+function renderQrCode (sessionId: String, userId?: String) {
+  const canvas = document.getElementById('canvas')
+  const params = [];
+  if(sessionId) params.push(`sessionId=${sessionId}`);
+  if(userId) params.push(`userId=${userId}`);
+
+  const qrcodeUrl = `${location.origin}/?${params.join("&")}`
   console.info("qrcodeUrl: ", qrcodeUrl);
   QRCode.toCanvas(canvas, qrcodeUrl, function (error: String) {
     if (error) console.error(error)
@@ -93,20 +97,23 @@ new Vue({
   //@ts-ignore
   sockets: {
     connect: function () {
-      console.log('socket connected');
       //@ts-ignore
       this.$socket.emit("register_user", { userId });
     },
     state_changed: function(message: WSMessage) {
-      if(!this.isAdmin)
+      if(!this.isAdmin && message.date != this.$route.fullPath)
       //@ts-ignore
         router.push({ path: message.data })
     },
     user_registered: function(message: WSMessage) {
       if(message.data == userId) {
         this.isAdmin = true;
-        renderQrCode(sessionId);
-      }
+        renderQrCode(sessionId, userId);
+      } else renderQrCode(sessionId);
+    },
+    user_deregistered: function(message: WSMessage) {
+      this.isAdmin = false;
+      renderQrCode(sessionId);
     }
   },
   watch: {
