@@ -1,8 +1,17 @@
-const server = require('http').createServer();
+const express = require('express');
+const app = express();
+const server = require('http').createServer(app);
+
+app.use("/css",express.static(__dirname + '/css'))
+app.use("/js",express.static(__dirname + '/js'))
+app.use("/img",express.static(__dirname + '/img'))
+
+app.get('/', function(req, res){
+  res.sendFile(__dirname + '/index.html');
+});
 
 const io = require('socket.io')(server, {
-  path: '/',
-  serveClient: false,
+  path: '/socket.io',
   // below are engine.IO options
   pingInterval: 10000,
   pingTimeout: 5000,
@@ -11,7 +20,7 @@ const io = require('socket.io')(server, {
 
 const adminMap = new Map()
 
-io.set('origins', 'http://localhost:8080, http://192.168.10.33:8080');
+// io.set('origins', 'http://localhost:8080, http://192.168.10.33:8080');
 
 console.log("listening on port 3001")
 
@@ -19,7 +28,7 @@ const isClientAdminForChannel = (socket, namespace) => {
   return namespace.adminSessionId == socket.client.id
 }
 
-const dynamicNsp = io.of(/^\/dynamic-[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i)
+const dynamicNsp = io.of(/^\/socket\.io\/dynamic-[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i)
 dynamicNsp.on('connect', (socket) => {
   console.log("connected", socket.client.id);
   const newNamespace = socket.nsp;
@@ -35,6 +44,7 @@ dynamicNsp.on('connect', (socket) => {
       const openSockets = newNamespace.clients().sockets;
       const fullSessionIdName = `${newNamespace.name}#${newNamespace.adminSessionId}`;
       if(openSockets[fullSessionIdName]) {
+        console.log("user is deregistered");
         openSockets[fullSessionIdName].emit("user_deregistered", { data: true });
       }
       // io.to(`${newNamespace.adminSessionId}`).emit("user_registered", { data: "" });
