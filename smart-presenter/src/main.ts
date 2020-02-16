@@ -7,7 +7,6 @@ const init = require("./init");
 const VueSocketIO = require('vue-socket.io');
 const QRCode = require('qrcode')
 
-
 interface WSMessage {
   data: String
 }
@@ -45,7 +44,7 @@ let getPreviousRoute = (routes, currentRouteName) => {
 
 Vue.use(new VueSocketIO({
     debug: true,
-    connection: `ws://localhost:3001/dynamic-${sessionId}`,
+    connection: `ws://localhost:3001/socket.io/dynamic-${sessionId}`,
     vuex: {
         store,
         actionPrefix: 'SOCKET_',
@@ -65,9 +64,14 @@ new Vue({
   },
   mounted() {
     window.addEventListener(this.event, this.emitEvent);
+    document.querySelector("#next").addEventListener("click", this.nextSlide);
+    document.querySelector("#prev").addEventListener("click", this.prevSlide);
   },
   destroyed() {
     window.removeEventListener(this.event, this.emitEvent);
+    document.querySelector("#next").removeEventListener("click", this.nextSlide);
+    document.querySelector("#prev").removeEventListener("click", this.prevSlide);
+
   },
   methods: {
     emitEvent: function (e: KeyboardEvent) {
@@ -101,7 +105,7 @@ new Vue({
       this.$socket.emit("register_user", { userId });
     },
     state_changed: function(message: WSMessage) {
-      if(!this.isAdmin && message.date != this.$route.fullPath)
+      if(!this.isAdmin && message.data != this.$route.fullPath)
       //@ts-ignore
         router.push({ path: message.data })
     },
@@ -109,11 +113,13 @@ new Vue({
       if(message.data == userId) {
         this.isAdmin = true;
         renderQrCode(sessionId, userId);
-      } else renderQrCode(sessionId);
+      }
+       // else renderQrCode(sessionId);
     },
     user_deregistered: function(message: WSMessage) {
       this.isAdmin = false;
-      renderQrCode(sessionId);
+      document.getElementById('canvas').style.display = "none"
+      // renderQrCode(sessionId);
     }
   },
   watch: {
