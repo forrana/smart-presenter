@@ -1,0 +1,18 @@
+version: "3"
+
+services:
+  webserver:
+    ports:
+      - "3001:3001"
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+
+  webapp:
+    ports:
+      - "8080:8080"
+    build:
+      context: ./smart-presenter
+      dockerfile: Dockerfile
+    volumes:
+      - ./smart-presenter:/usr/app:z
